@@ -1,7 +1,23 @@
-FROM node:alpine3.18
+# Use a stable Node.js image (not alpine - MongoDB drivers break on alpine)
+FROM node:18-slim
+
+# Set working directory
 WORKDIR /app
-COPY package.json ./
-RUN npm install
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies
+RUN npm ci --omit=dev
+
+# Copy all backend code
 COPY . .
+
+# Set environment for production
+ENV NODE_ENV=production
+
+# Expose backend port
 EXPOSE 4000
-CMD [ "npm", "run", "start" ]
+
+# Start the Node.js backend
+CMD ["node", "index.js"]

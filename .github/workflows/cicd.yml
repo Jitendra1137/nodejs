@@ -3,7 +3,7 @@ name: Deploy Node Application
 on: 
   push:
     branches:
-      - mern-ec2-docker
+      - main
 
 jobs:
   build:
@@ -11,20 +11,33 @@ jobs:
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
-      - name: Login to docker hub
-        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}     
+
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Build Docker Image
-        run: docker build -t integrationninjas/nodejs-app  .
-      - name: Publish Image to docker hub
-        run: docker push integrationninjas/nodejs-app:latest 
- 
+        run: docker build -t jitendrajat/nodejs-app:latest .
+
+      - name: Publish Image to Docker Hub
+        run: docker push jitendrajat/nodejs-app:latest
+
+
   deploy:
     needs: build
-    runs-on: self-hosted 
+    runs-on: self-hosted
     steps:
-      - name: Pull image from docker hub
-        run: docker pull integrationninjas/nodejs-app:latest 
-      - name: Delete old container
-        run: docker rm -f nodejs-app-container  
-      - name: Run Docker Container
-        run: docker run -d -p 4000:4000 --name nodejs-app-container -e MONGO_PASSWORD='${{ secrets.MONGO_PASSWORD }}' integrationninjas/nodejs-app
+      - name: Pull the latest image
+        run: docker pull jitendrajat/nodejs-app:latest
+
+      - name: Remove old container
+        run: docker rm -f nodejs-app-container || true
+
+      - name: Run new Node.js container
+        run: |
+          docker run -d \
+            -p 4000:4000 \
+            --name nodejs-app-container \
+            -e MONGO_USERNAME="${{ secrets.MONGO_USERNAME }}" \
+            -e MONGO_PASSWORD="${{ secrets.MONGO_PASSWORD }}" \
+            -e MONGO_HOST="${{ secrets.MONGO_HOST }}" \
+            jitendrajat/nodejs-app:latest
